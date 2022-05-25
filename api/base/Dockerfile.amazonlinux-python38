@@ -1,0 +1,28 @@
+FROM amazonlinux:1
+
+MAINTAINER Serozhechkin Anton <serezhechkintosh@gmail.com>
+
+RUN mkdir -p /src/dashboard
+WORKDIR /src/dashboard
+EXPOSE 8888
+RUN yum -y update \
+    && yum install -y gcc openssl-devel bzip2-devel shadow-utils findutils procps grep jq tar gzip file diffutils build-essential openldap-devel postgresql96-devel libffi-devel
+
+ARG PYTHON_MAJOR=3.8
+RUN PYTHON_VERSION=$(curl -sSL https://www.python.org/ftp/python/|grep -v "README"|grep "${PYTHON_MAJOR}"|sed -s 's:.*href=\"\([^/">]*\)/\">.*:\1:g'|sort -u|tail -1) \
+    && curl -o Python-${PYTHON_VERSION}.tgz -sSL https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tgz \
+    && tar -xzf Python-${PYTHON_VERSION}.tgz \
+    && cd Python-${PYTHON_VERSION} \
+    && ./configure --enable-optimizations \
+    && make altinstall 2>&1 >/dev/null\
+    && /usr/local/bin/python${PYTHON_MAJOR} -V \
+    && curl -SL "https://bootstrap.pypa.io/get-pip.py" -o "get-pip.py" \
+    && python${PYTHON_MAJOR} get-pip.py \
+    && cd /src/dashboard \
+    && rm -rf Python-${PYTHON_VERSION}*
+
+# Install API dev specific
+ARG REQUIREMENTS_FILE=requirements.txt
+COPY ${REQUIREMENTS_FILE} .
+RUN python -V && pip3 -V && pip3 install --no-cache-dir --upgrade -r ${REQUIREMENTS_FILE}
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8889"]

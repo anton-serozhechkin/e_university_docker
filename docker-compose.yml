@@ -1,0 +1,67 @@
+# Before running this file:
+
+# 1. Change paths in volumes before ":" in this file to yours (e.g. /home/anton/dev/e-university/e_university_api/)
+
+# 2. Run this file from dashboard-docker repo from terminal:
+  # docker-compose -f docker-compose.yml up --build
+
+# 3. After all containers are up, you can open the following links:
+  # http://0.0.0.0:8889/
+  # http://0.0.0.0:8889/docs
+
+# Useful commands for Docker:
+  # docker ps |grep api - Show running container, where api name is present
+  # docker image ls|grep eun - Show all images for sme network
+  # docker rmi <image_id> - Remove an image
+  # docker rm <container_id> - Remove a container
+  # docker kill <container_id> - Stop a container
+  # docker system prune - Clean a system from dangling containers.
+  # docker-compose -f docker-compose.yml down - Stop all containers
+  # docker exec -it <container_id> bash - Go inside a container to see dirs, do some commands
+  # docker run -t -d --name test <image_name> - To run container, e.g. when it always exites
+  # docker inspect --format='{{.Id}} {{.Parent}}' $(docker images --filter since=<image_id> -q)
+  # docker inspect --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $INSTANCE_ID - for get host address of container(for eun-postgresdb)
+
+
+version: '3.8'
+
+networks:
+  default:
+    name: eun
+
+volumes: 
+    postgresql: 
+
+services:
+    postgresdb:
+        image: postgres:12.5
+        container_name: "eun-postgresdb"
+        restart: always
+        volumes:
+           - postgresql:/data/postgres
+        ports:
+           - 5434:5432
+        environment:
+          POSTGRES_USER: "****"
+          POSTGRES_PASSWORD: "****"
+
+    eun_api_base:
+        build:
+            context: ./api/base
+            dockerfile: Dockerfile.amazonlinux-python38
+        image: eun/api:base
+        container_name: eun-api-base
+
+    eun_api:
+        build:
+            context: ./api/latest
+            dockerfile: Dockerfile
+        image: eun/api:latest
+        container_name: eun-api
+        restart: always
+        depends_on:
+            - eun_api_base
+        volumes:
+            - /home/anton/dev/e-university/e_university_api/:/src/dashboard
+        ports:
+            - "8889:8889"
