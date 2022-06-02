@@ -1,3 +1,6 @@
 fastapi==0.78.0
 pydantic==1.9.1
 uvicorn==0.17.6
+asyncpg==0.25.0
+psycopg2-binary==2.9.3
+databases==0.6.0
